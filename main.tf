@@ -82,7 +82,7 @@ resource "aws_secretsmanager_secret_version" "db" {
     "port"           = module.db.db_instance_port
     "dbname"         = module.db.db_instance_name
     "connect_string" = "${module.db.db_instance_endpoint}/${upper(var.database_name)}"
-    "engine"         = "oracle"
+    "engine"         = "postgresql"
   })
 }
 resource "random_password" "root_password" {
