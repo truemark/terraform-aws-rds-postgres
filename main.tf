@@ -3,13 +3,11 @@ module "db" {
   # https://registry.terraform.io/modules/terraform-aws-modules/rds/aws/latest
   # https://github.com/terraform-aws-modules/terraform-aws-rds/blob/v3.3.0/examples/complete-oracle/main.tf
   source  = "terraform-aws-modules/rds/aws"
-  version = "3.3.0"
+  version = "5.1.0"
 
   # The name of the database to create. Upper is required by Oracle.
   # Can't be more than 8 characters.
-  name = var.database_name
-
-
+  db_name = var.database_name
 
   # parameter_group_use_name_prefix = false
   allocated_storage               = var.allocated_storage
@@ -90,11 +88,6 @@ resource "aws_secretsmanager_secret_version" "db" {
 resource "random_password" "root_password" {
   length  = var.random_password_length
   special = false
-  # An Oracle password cannot start with a number.
-  # There is no way to tell Terraform to create a password that starts
-  # with a character only that I am aware of, so don't use
-  # numbers at all.
-  number = false
 }
 
 data "aws_secretsmanager_secret_version" "db" {
