@@ -1,10 +1,21 @@
+variable "create_db_instance" {
+  description = "Whether to create the database instance"
+  type        = bool
+  default     = true
+}
+
 variable "ingress_cidrs" {
-  default = ["0.0.0.0/0"]
+  description = "List of allowed CIDRs that can access this RDS instance."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
 }
 
 variable "egress_cidrs" {
-  default = ["0.0.0.0/0"]
+  description = "List of allowed CIDRs that this RDS instance can access."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
 }
+
 variable "tags" {
   description = "A map of tags to add to all resources."
   type        = map(string)
@@ -13,28 +24,31 @@ variable "tags" {
 
 variable "copy_tags_to_snapshot" {
   description = "Copy all cluster tags to snapshots"
+  type        = bool
   default     = false
 }
 
-variable "store_master_password_as_secret" {
-  description = "Toggle on or off storing the root password in Secrets Manager."
+variable "create_secrets" {
+  description = "Toggle on or off storing passwords in AWS Secrets Manager."
+  type        = bool
   default     = true
 }
 
 variable "random_password_length" {
   description = "The length of the password to generate for root user."
+  type        = number
   default     = 16
 }
 
 variable "username" {
   description = "The master database account to create."
-  default     = "root"
+  default     = "postgres" # This is the default username RDS uses
 }
 
 variable "create_security_group" {
   description = "Whether to create the security group for the RDS instance"
-  default     = true
   type        = bool
+  default     = true
 }
 
 variable "security_group_tags" {
@@ -53,12 +67,6 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
-variable "family" {
-  description = "The family of the DB parameter group"
-  type        = string
-  default     = "postgres"
-}
-
 variable "allocated_storage" {
   description = "Storage size in GB."
   default     = 100
@@ -66,13 +74,43 @@ variable "allocated_storage" {
 
 variable "max_allocated_storage" {
   description = "Maximum storage size in GB."
-  default     = 2000
+  default     = 500
+}
+
+variable "storage_type" {
+  description = "One of 'standard', 'gp2' or 'io1'."
+  type        = string
+  default     = "io1"
+}
+
+variable "iops" {
+  description = "The amount of provisioned IOPS. Setting implies a storage_type of io1."
+  type        = number
+  default     = 500
+}
+
+variable "kms_key_arn" {
+  description = "The KMS key to use. Setting this overrides any value put in kms_key_id and kms_key_alias."
+  type        = string
+  default     = null
+}
+
+variable "kms_key_id" {
+  description = "The ID of the KMS key to use. Setting this overrides any value put in kms_key_alias."
+  type        = string
+  default     = null
+}
+
+variable "kms_key_alias" {
+  description = "The alias of the KMS key to use."
+  type        = string
+  default     = null
 }
 
 variable "db_parameters" {
   description = "Map of parameters to use in the aws_db_parameter_group resource"
   type        = list(map(any))
-  default     = [{}]
+  default     = []
 }
 
 variable "db_parameter_group_tags" {
@@ -83,20 +121,25 @@ variable "db_parameter_group_tags" {
 variable "instance_name" {
   description = "Name for the db instance. This will display in the console."
   type        = string
-  default     = ""
+}
+
+# aws rds describe-db-engine-versions --query "DBEngineVersions[].DBParameterGroupFamily"
+variable "family" {
+  description = "The DB parameter group family name"
+  type        = string
+  default     = "postgres14"
 }
 
 variable "engine_version" {
-  description = "Postgres database engine version."
+  description = "PostgreSQL database engine version."
   type        = string
-  default     = "14.1"
+  default     = "14.4"
 }
-
 
 variable "instance_type" {
   description = "Instance type to use at master instance. If instance_type_replica is not set it will use the same type for replica instances"
   type        = string
-  default     = "db.t2.small"
+  default     = "db.t4g.small"
 }
 
 variable "apply_immediately" {
@@ -109,12 +152,6 @@ variable "skip_final_snapshot" {
   description = "Should a final snapshot be created on cluster destroy"
   type        = bool
   default     = false
-}
-
-variable "allowed_cidr_blocks" {
-  description = "A list of CIDR blocks which are allowed to access the database"
-  type        = list(string)
-  default     = ["10.0.0.0/8"]
 }
 
 variable "backup_retention_period" {
@@ -136,19 +173,9 @@ variable "preferred_maintenance_window" {
 }
 
 variable "deletion_protection" {
-  type    = bool
-  default = false
-}
-
-variable "share" {
-  default = false
-  type    = bool
-}
-
-variable "share_tags" {
-  description = "Additional tags for the resource access manager share."
-  type        = map(string)
-  default     = {}
+  description = "Sets deletion protection on the instance"
+  type        = bool
+  default     = false
 }
 
 variable "snapshot_identifier" {
@@ -178,5 +205,14 @@ variable "multi_az" {
 variable "database_name" {
   description = "Name for the database to be created."
   type        = string
-  default     = ""
+  default     = null
+}
+
+variable "additional_users" {
+  description = "Additional users to generate secrets for"
+  type = list(object({
+    username      = string
+    database_name = string
+  }))
+  default = []
 }
