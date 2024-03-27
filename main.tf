@@ -69,7 +69,7 @@ resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
 module "db" {
   # https://registry.terraform.io/modules/terraform-aws-modules/rds/aws/latest
   source                                = "terraform-aws-modules/rds/aws"
-  version                               = "5.1.0"
+  version                               = "6.5.4"
   create_db_instance                    = var.create_db_instance
   create_db_parameter_group             = true
   parameters                            = var.db_parameters
@@ -85,7 +85,7 @@ module "db" {
   backup_retention_period               = var.backup_retention_period
   copy_tags_to_snapshot                 = var.copy_tags_to_snapshot
   create_db_subnet_group                = true
-  create_random_password                = false
+  #create_random_password                = false
   db_instance_tags                      = var.tags
   db_subnet_group_tags                  = var.tags
   deletion_protection                   = var.deletion_protection
@@ -106,6 +106,7 @@ module "db" {
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
   monitoring_role_arn                   = join("", aws_iam_role.rds_enhanced_monitoring.*.arn)
+  ca_cert_identifier                    = var.ca_cert_identifier
 }
 
 module "master_secret" {
