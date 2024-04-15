@@ -1,7 +1,15 @@
 locals {
   port = 5432
 }
-
+module "standard_tags" {
+  source  = "truemark/standard-tags/aws"
+  version = "1.0.0"
+  automation_component = {
+    id     = "terraform-aws-rds-postgres"
+    url    = "https://registry.terraform.io/modules/truemark/rds-postgres"
+    vendor = "TrueMark"
+  }
+}
 data "aws_kms_alias" "db" {
   count = var.create_db_instance && var.kms_key_arn == null && var.kms_key_id == null && var.kms_key_alias != null ? 1 : 0
   name  = var.kms_key_alias
@@ -68,34 +76,34 @@ resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
 
 module "db" {
   # https://registry.terraform.io/modules/terraform-aws-modules/rds/aws/latest
-  source                                = "terraform-aws-modules/rds/aws"
-  version                               = "6.5.4"
+  source  = "terraform-aws-modules/rds/aws"
+  version = "6.5.4"
 
-  allocated_storage                     = var.allocated_storage
-  apply_immediately                     = var.apply_immediately
-  auto_minor_version_upgrade            = var.auto_minor_version_upgrade
-  backup_retention_period               = var.backup_retention_period
-  ca_cert_identifier                    = var.ca_cert_identifier
-  copy_tags_to_snapshot                 = var.copy_tags_to_snapshot
-  create_db_instance                    = var.create_db_instance
-  create_db_parameter_group             = true
-  create_db_subnet_group                = true
-  db_instance_tags                      = var.tags
-  db_name                               = var.database_name
-  db_subnet_group_tags                  = var.tags
-  deletion_protection                   = var.deletion_protection
-  engine                                = "postgres"
-  engine_version                        = var.engine_version
-  family                                = var.family
-  identifier                            = var.instance_name
-  instance_class                        = var.instance_type
-  iops                                  = var.iops
-  kms_key_id                            = var.kms_key_arn != null ? var.kms_key_arn : (var.kms_key_id != null) ? join("", data.aws_kms_key.db.*.arn) : (var.kms_key_alias != null) ? join("", data.aws_kms_alias.db.*.target_key_arn) : null
-  max_allocated_storage                 = var.max_allocated_storage
-  monitoring_interval                   = var.monitoring_interval
-  monitoring_role_arn                   = join("", aws_iam_role.rds_enhanced_monitoring.*.arn)
-  multi_az                              = var.multi_az
-  parameters                            = var.db_parameters
+  allocated_storage          = var.allocated_storage
+  apply_immediately          = var.apply_immediately
+  auto_minor_version_upgrade = var.auto_minor_version_upgrade
+  backup_retention_period    = var.backup_retention_period
+  ca_cert_identifier         = var.ca_cert_identifier
+  copy_tags_to_snapshot      = var.copy_tags_to_snapshot
+  create_db_instance         = var.create_db_instance
+  create_db_parameter_group  = true
+  create_db_subnet_group     = true
+  db_instance_tags           = var.tags
+  db_name                    = var.database_name
+  db_subnet_group_tags       = var.tags
+  deletion_protection        = var.deletion_protection
+  engine                     = "postgres"
+  engine_version             = var.engine_version
+  family                     = var.family
+  identifier                 = var.instance_name
+  instance_class             = var.instance_type
+  iops                       = var.iops
+  kms_key_id                 = var.kms_key_arn != null ? var.kms_key_arn : (var.kms_key_id != null) ? join("", data.aws_kms_key.db.*.arn) : (var.kms_key_alias != null) ? join("", data.aws_kms_alias.db.*.target_key_arn) : null
+  max_allocated_storage      = var.max_allocated_storage
+  monitoring_interval        = var.monitoring_interval
+  monitoring_role_arn        = join("", aws_iam_role.rds_enhanced_monitoring.*.arn)
+  multi_az                   = var.multi_az
+  parameters                 = var.db_parameters
   #password                              = join("", random_password.db.*.result)
   password                              = var.store_master_password_as_secret ? random_password.root_password.result : null
   performance_insights_enabled          = true
@@ -111,25 +119,25 @@ module "db" {
 }
 
 module "master_secret" {
-  source   = "truemark/rds-secret/aws"
-  version  = "1.1.2"
-  create = var.create_db_instance && var.create_secrets
-  cluster = false
-  identifier = module.db.db_instance_id
-  name = "master"
-  username = module.db.db_instance_username
-  password = join("", random_password.db.*.result)
+  source        = "truemark/rds-secret/aws"
+  version       = "1.1.2"
+  create        = var.create_db_instance && var.create_secrets
+  cluster       = false
+  identifier    = module.db.db_instance_id
+  name          = "master"
+  username      = module.db.db_instance_username
+  password      = join("", random_password.db.*.result)
   database_name = var.database_name != null ? var.database_name : "postgres"
 }
 
 module "user_secrets" {
-  for_each = {for user in var.additional_users: user.username => user}
-  source   = "truemark/rds-secret/aws"
-  version  = "1.1.2"
-  create = var.create_db_instance && var.create_secrets
-  cluster = false
-  identifier = module.db.db_instance_id
-  name = each.value.username
+  for_each      = { for user in var.additional_users : user.username => user }
+  source        = "truemark/rds-secret/aws"
+  version       = "1.1.2"
+  create        = var.create_db_instance && var.create_secrets
+  cluster       = false
+  identifier    = module.db.db_instance_id
+  name          = each.value.username
   database_name = each.value.database_name
 }
 
