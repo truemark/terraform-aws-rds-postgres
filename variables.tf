@@ -1,11 +1,3 @@
-variable "additional_users" {
-  description = "Additional users to generate secrets for"
-  type = list(object({
-    username      = string
-    database_name = string
-  }))
-  default = []
-}
 variable "allocated_storage" {
   description = "Storage size in GB."
   default     = 100

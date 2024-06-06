@@ -10,9 +10,5 @@ terraform {
       source  = "hashicorp/random"
       version = ">= 3.6.0"
     }
-    sdm = {
-      source  = "strongdm/sdm"
-      version = ">= 1.0.39"
-    }
   }
 }

@@ -124,17 +124,4 @@ module "master_secret" {
   tags          = local.tags
   depends_on    = [module.db]
 }
-module "user_secrets" {
-  source  = "truemark/rds-secret/aws"
-  version = "1.2.3"
-
-  for_each      = { for user in var.additional_users : user.username => user }
-  create        = var.create_db_instance && var.create_secrets
-  cluster       = false
-  database_name = each.value.database_name
-  identifier    = module.db.db_instance_identifier
-  name          = each.value.username
-  tags          = local.tags
-  depends_on    = [module.db]
-}
 

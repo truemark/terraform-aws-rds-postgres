@@ -29,7 +29,6 @@ module "db" {
 ## Parameters
 The following parameters are supported:
 
-* additional_users
 * allocated_storage
 * allow_major_version_upgrade
 * apply_immediately
