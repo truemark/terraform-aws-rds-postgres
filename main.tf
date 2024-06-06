@@ -1,74 +1,74 @@
 locals {
-  port                                  = 5432
+  port = 5432
 
-  tags                                  = merge(var.tags,
+  tags = merge(var.tags,
     {
-      "automation:component-id"         = "terraform-aws-rds-postgres",
-      "automation:component-url"        = "https://registry.terraform.io/modules/truemark/rds-postgres/aws/latest",
-      "automation:component-vendor"     = "TrueMark",
-      "backup:policy"                   = "default-week",
+      "automation:component-id"     = "terraform-aws-rds-postgres",
+      "automation:component-url"    = "https://registry.terraform.io/modules/truemark/rds-postgres/aws/latest",
+      "automation:component-vendor" = "TrueMark",
+      "backup:policy"               = "default-week",
   })
 }
 data "aws_kms_alias" "db" {
-  count                                 = var.create_db_instance && var.kms_key_arn == null && var.kms_key_id == null && var.kms_key_alias != null ? 1 : 0
-  name                                  = var.kms_key_alias
+  count = var.create_db_instance && var.kms_key_arn == null && var.kms_key_id == null && var.kms_key_alias != null ? 1 : 0
+  name  = var.kms_key_alias
 }
 data "aws_kms_key" "db" {
-  count                                 = var.create_db_instance && var.kms_key_arn == null && var.kms_key_id != null ? 1 : 0
-  key_id                                = var.kms_key_id
+  count  = var.create_db_instance && var.kms_key_arn == null && var.kms_key_id != null ? 1 : 0
+  key_id = var.kms_key_id
 }
 resource "random_password" "db" {
-  count                                 = var.create_db_instance ? 1 : 0
-  length                                = var.random_password_length
-  special                               = false
+  count   = var.create_db_instance ? 1 : 0
+  length  = var.random_password_length
+  special = false
 }
 resource "aws_security_group" "db" {
-  count                                 = var.create_db_instance ? 1 : 0
-  name                                  = var.instance_name
-  vpc_id                                = var.vpc_id
-  tags                                  = local.tags
+  count  = var.create_db_instance ? 1 : 0
+  name   = var.instance_name
+  vpc_id = var.vpc_id
+  tags   = local.tags
 
   ingress {
-    from_port                           = local.port
-    to_port                             = local.port
-    protocol                            = "tcp"
-    cidr_blocks                         = var.ingress_cidrs
+    from_port   = local.port
+    to_port     = local.port
+    protocol    = "tcp"
+    cidr_blocks = var.ingress_cidrs
   }
   egress {
-    from_port                           = 0
-    to_port                             = 0
-    protocol                            = -1
-    cidr_blocks                         = var.egress_cidrs
+    from_port   = 0
+    to_port     = 0
+    protocol    = -1
+    cidr_blocks = var.egress_cidrs
   }
 }
 data "aws_iam_policy_document" "rds_enhanced_monitoring" {
   statement {
-    actions                             = [
+    actions = [
       "sts:AssumeRole",
     ]
-    effect                              = "Allow"
+    effect = "Allow"
     principals {
-      type                              = "Service"
-      identifiers                       = ["monitoring.rds.amazonaws.com"]
+      type        = "Service"
+      identifiers = ["monitoring.rds.amazonaws.com"]
     }
   }
 }
 resource "aws_iam_role" "rds_enhanced_monitoring" {
-  count                                 = var.create_db_instance ? 1 : 0
-  name                                  = "rds-enhanced-monitoring-${lower(var.instance_name)}"
-  assume_role_policy                    = data.aws_iam_policy_document.rds_enhanced_monitoring.json
-  tags                                  = local.tags
+  count              = var.create_db_instance ? 1 : 0
+  name               = "rds-enhanced-monitoring-${lower(var.instance_name)}"
+  assume_role_policy = data.aws_iam_policy_document.rds_enhanced_monitoring.json
+  tags               = local.tags
 }
 
 resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
-  count                                 = var.create_db_instance ? 1 : 0
-  role                                  = aws_iam_role.rds_enhanced_monitoring[count.index].name
-  policy_arn                            = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+  count      = var.create_db_instance ? 1 : 0
+  role       = aws_iam_role.rds_enhanced_monitoring[count.index].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
 }
 module "db" {
   # https://registry.terraform.io/modules/terraform-aws-modules/rds/aws/latest
-  source                                = "terraform-aws-modules/rds/aws"
-  version                               = "6.6.0"
+  source  = "terraform-aws-modules/rds/aws"
+  version = "6.6.0"
 
   allocated_storage                     = var.allocated_storage
   apply_immediately                     = var.apply_immediately
@@ -89,7 +89,7 @@ module "db" {
   identifier                            = var.instance_name
   instance_class                        = var.instance_type
   iops                                  = var.iops
-  kms_key_id                            = var.kms_key_arn
+  kms_key_id                            = var.kms_key_arn != null ? var.kms_key_arn : (var.kms_key_id != null) ? join("", data.aws_kms_key.db.*.arn) : (var.kms_key_alias != null) ? join("", data.aws_kms_alias.db.*.target_key_arn) : null
   major_engine_version                  = var.major_engine_version
   manage_master_user_password           = var.manage_master_user_password
   max_allocated_storage                 = var.max_allocated_storage
@@ -110,31 +110,31 @@ module "db" {
   vpc_security_group_ids                = [join("", aws_security_group.db.*.id)]
 }
 module "master_secret" {
-  source                                = "truemark/rds-secret/aws"
-  version                               = "1.1.2"
+  source  = "truemark/rds-secret/aws"
+  version = "1.2.3"
 
-  count                                 = var.create_db_instance && var.manage_master_user_password ? 0 : 1
-  create                                = var.create_db_instance && var.create_secrets
-  cluster                               = false
-  database_name                         = var.database_name != null ? var.database_name : "postgres"
-  identifier                            = module.db.db_instance_identifier
-  name                                  = "master"
-  username                              = module.db.db_instance_username
-  password                              = var.password != null ? var.password : join("", random_password.db.*.result)
-  tags                                  = local.tags
-  depends_on                            = [module.db]
+  count         = var.create_db_instance && var.manage_master_user_password ? 0 : 1
+  create        = var.create_db_instance && var.create_secrets
+  cluster       = false
+  database_name = var.database_name != null ? var.database_name : "postgres"
+  identifier    = module.db.db_instance_identifier
+  name          = "master"
+  username      = module.db.db_instance_username
+  password      = var.password != null ? var.password : join("", random_password.db.*.result)
+  tags          = local.tags
+  depends_on    = [module.db]
 }
 module "user_secrets" {
-  source                                = "truemark/rds-secret/aws"
-  version                               = "1.1.2"
+  source  = "truemark/rds-secret/aws"
+  version = "1.2.3"
 
-  for_each                              = { for user in var.additional_users : user.username => user }
-  create                                = var.create_db_instance && var.create_secrets
-  cluster                               = false
-  database_name                         = each.value.database_name
-  identifier                            = module.db.db_instance_identifier
-  name                                  = each.value.username
-  tags                                  = local.tags
-  depends_on                            = [module.db]
+  for_each      = { for user in var.additional_users : user.username => user }
+  create        = var.create_db_instance && var.create_secrets
+  cluster       = false
+  database_name = each.value.database_name
+  identifier    = module.db.db_instance_identifier
+  name          = each.value.username
+  tags          = local.tags
+  depends_on    = [module.db]
 }
 
