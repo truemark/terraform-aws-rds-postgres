@@ -1,6 +1,5 @@
 # RDS PostgreSQL
 
-
 This terraform module creates a provisioned RDS instance with PostgreSQL compatibility. This module extends the functionality of the module
 "terraform-aws-modules/rds/aws" providing PostgreSQL specific defaults.
 
