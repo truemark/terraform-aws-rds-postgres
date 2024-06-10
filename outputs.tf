@@ -67,7 +67,3 @@ output "master_secret" {
   description = "Master secret"
   value       = module.master_secret
 }
-output "user_secrets" {
-  description = "User secrets"
-  value       = module.user_secrets
-}
