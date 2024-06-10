@@ -1,6 +1,7 @@
 notes.txt
 .sw?
 .vscode
+.idea
 
 # Terraform & Terragrunt
 .terragrunt-cache
