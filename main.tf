@@ -111,7 +111,7 @@ module "db" {
 }
 module "master_secret" {
   source  = "truemark/rds-secret/aws"
-  version = "1.2.3"
+  version = "1.2.4"
 
   count         = var.create_db_instance && var.manage_master_user_password ? 0 : 1
   create        = var.create_db_instance && var.create_secrets
