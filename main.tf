@@ -68,7 +68,7 @@ resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
 module "db" {
   # https://registry.terraform.io/modules/terraform-aws-modules/rds/aws/latest
   source  = "terraform-aws-modules/rds/aws"
-  version = "6.6.0"
+  version = "6.7.0"
 
   allocated_storage                     = var.allocated_storage
   apply_immediately                     = var.apply_immediately
